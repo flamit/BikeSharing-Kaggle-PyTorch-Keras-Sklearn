@@ -79,14 +79,15 @@ for epoch in range(epochs):
 
     for step in range(steps_in_epoch):
         # Forward pass: compute predicted y by passing x to the net.
-        X_train_batch = Variable(X_train.data[batch_ind:batch_ind + batch_size])
-        Y_train_batch = Variable(Y_train.data[batch_ind:batch_ind + batch_size])
+        X_train_batch = Variable(X_train.data[batch_ind:batch_ind + batch_size].cuda())
+        Y_train_batch = Variable(Y_train.data[batch_ind:batch_ind + batch_size].cuda())
+
+        optimizer.zero_grad()
+
         y_pred = net(X_train_batch)
 
         # Compute and print loss.
         loss = mse(y_pred, Y_train_batch)
-
-        optimizer.zero_grad()
 
         loss.backward()
 
