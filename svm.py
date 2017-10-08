@@ -1,4 +1,4 @@
-from sklearn import svm
+from sklearn.svm import SVR
 import pandas as pd
 import numpy as np
 from data_utils import DataUtils as du
@@ -79,17 +79,14 @@ df['hour_reg'] = df.datetime.apply(du.get_hour_registered)
 df['hour_cas'] = df.datetime.apply(du.get_hour_casual)
 df_to_predict['hour_reg'] = df_to_predict.datetime.apply(du.get_hour_registered)
 df_to_predict['hour_cas'] = df_to_predict.datetime.apply(du.get_hour_casual)
-print(df.head(10))
 
 #Data randomization(shuffling)
 df = df.sample(frac=1).reset_index(drop=True)
-print(df.head(30))
 
 #Spitting data into input features and labels
 datasetY = df.ix[:,'count']
 datasetX = df.drop(['casual','registered','count','datetime','windspeed','atemp','season','month'],1)
 datasetX_pred = df_to_predict.drop(['datetime','windspeed','atemp','season'],1)
-print(datasetY.head(10))
 
 #Normalizing inputs
 datasetX = (datasetX - datasetX.min() - (datasetX.max() - datasetX.min())/2) / ((datasetX.max() - datasetX.min())/2)
@@ -99,8 +96,8 @@ datasetX_pred = (datasetX_pred - datasetX_pred.min() - (datasetX_pred.max() - da
 # datasetX_pred = datasetX_pred.drop(['day_of_week'],1)
 #datasetX.head(10)
 
-print("Trainset:",datasetX.head(5))
-print("Testset:",datasetX_pred.head(5))
+print("Trainset:",datasetX.columns.values,datasetX.shape)
+print("Testset:",datasetX_pred.columns.values,datasetX_pred.shape)
 
 #Dividing the original train dataset into train/test set, whole set because keras provides spliting to cross-validation and train set
 train_setX = datasetX.ix[:,:]
@@ -113,22 +110,28 @@ train_setX = np.array(train_setX)
 train_setY = np.array(train_setY)
 
 #Training our model
-classifier = svm.SVR()
-classifier.fit(datasetX, datasetY)
 
-#Making predictions on train set and setting negative results to zero
-predictions_train = classifier.predict(datasetX)
-get_positive_vals = lambda x: x if x >=0 else 0
-predictions_train = [get_positive_vals(y) for y in predictions_train]
+svr_lin = SVR(kernel='linear', C=1000)
+svr_rbf = SVR(kernel='rbf', C=1000, gamma=0.03)
+svr_poly = SVR(kernel='poly', C=1000, degree=2, gamma=0.05)
+classifiers = [svr_lin,svr_rbf,svr_poly]
 
-#Calculating error on train set
-labels_train = np.array(df.ix[:,'count'])
-train_error = get_train_error(predictions_train,labels_train)
-print ("Error:",train_error)
+for name,classifier in zip(["linear","gaussian","polynomial"],classifiers):
+    classifier.fit(datasetX, datasetY)
 
-#Making predictions on test set and setting negative results to zero
-predictions_test = classifier.predict(datasetX_pred)
-predictions_test_final = [get_positive_vals(y) for y in predictions_test]
+    #Making predictions on train set and setting negative results to zero
+    predictions_train = classifier.predict(datasetX)
+    get_positive_vals = lambda x: x if x >=0 else 0
+    predictions_train = [get_positive_vals(y) for y in predictions_train]
 
-#Saving predictions
-np.savetxt("svm_predictions.csv", predictions_test_final, delimiter=",")
+    #Calculating error on train set
+    labels_train = np.array(df.ix[:,'count'])
+    train_error = get_train_error(predictions_train,labels_train)
+    print ("Error for",name,"kernel:",train_error)
+
+    #Making predictions on test set and setting negative results to zero
+    predictions_test = classifier.predict(datasetX_pred)
+    predictions_test_final = [get_positive_vals(y) for y in predictions_test]
+
+    #Saving predictions
+    #np.savetxt("svm_predictions.csv", predictions_test_final, delimiter=",")
