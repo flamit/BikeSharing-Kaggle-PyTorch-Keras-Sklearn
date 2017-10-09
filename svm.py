@@ -53,18 +53,20 @@ if __name__ == '__main__':
 
     max_gamma_val = 0.16
     min_gamma_val = 0.12
-    steps = 10
+    max_c_val = 400
+    min_c_val = 150
+    steps = 20
     repeats = 2
 
     gamma_vals = np.linspace(max_gamma_val, min_gamma_val, steps)
+    c_vals = np.linspace(max_c_val, min_c_val, steps)
 
     train_err_his = np.zeros(steps)
     val_err_his = np.zeros(steps)
 
-    #classifier = svr_rbf
     name = "Gaussian"
 
-    for i,gamma in enumerate(gamma_vals):
+    for i,c_val in enumerate(c_vals):
         for j in range(repeats):
             if j ==0:
                 X_train = datasetX[:TRAIN_SIZE]
@@ -76,7 +78,7 @@ if __name__ == '__main__':
                 Y_train = datasetY[TRAIN_SIZE:]
                 X_val = datasetX[:TRAIN_SIZE]
                 Y_val = datasetY[:TRAIN_SIZE]
-            classifier = SVR(kernel='rbf', C=1000, gamma=gamma)
+            classifier = SVR(kernel='rbf', C=c_val, gamma=0.1325)
             classifier.fit(X_train, Y_train)
 
             #Making predictions on train set and setting negative results to zero
@@ -94,9 +96,9 @@ if __name__ == '__main__':
     val_err_his = val_err_his / 2
     train_err_his = train_err_his / 2
 
-    plt.plot(gamma_vals,train_err_his,label='train')
-    plt.plot(gamma_vals,val_err_his,label='val')
-    plt.xlabel('gamma', fontsize=16)
+    plt.plot(c_vals,train_err_his,label='train')
+    plt.plot(c_vals,val_err_his,label='val')
+    plt.xlabel('c', fontsize=16)
     plt.ylabel('error', fontsize=16)
     plt.legend()
     plt.show()
