@@ -1,8 +1,9 @@
 from sklearn.svm import SVR
 import numpy as np
 from data_utils import DataUtils as du
-TOTAL_DATASET_SIZE = 10887
+from matplotlib import pyplot as plt
 
+TOTAL_DATASET_SIZE = 10887
 HOURS_IN_DAY = 24
 START_YEAR = 2011
 DAYS_IN_YEAR = 365
@@ -49,24 +50,42 @@ if __name__ == '__main__':
     #Training our model
     #svr_lin = SVR(kernel='linear', C=1000)
     #svr_poly = SVR(kernel='poly', C=1000, degree=2, gamma=0.5)
-    svr_rbf = SVR(kernel='rbf', C=1000, gamma=1)
 
-    for name,classifier in zip(["Gaussian"],[svr_rbf]):
+    max_gamma_val = 0.5
+    min_gamma_val = 0.01
+    steps = 30
 
+    gamma_vals = np.linspace(max_gamma_val, min_gamma_val, steps)
+
+    train_err_his = np.zeros(steps)
+    val_err_his = np.zeros(steps)
+
+    #classifier = svr_rbf
+    name = "Gaussian"
+
+    for i,gamma in enumerate(gamma_vals):
+        classifier = SVR(kernel='rbf', C=1000, gamma=gamma)
         classifier.fit(X_train, Y_train)
 
         #Making predictions on train set and setting negative results to zero
         predictions_train = classifier.predict(X_train)
         predictions_train = np.maximum(predictions_train, 0)
         train_error = rmsle(predictions_train,Y_train)
+        train_err_his[i] = train_error
+
         predictions_val = classifier.predict(X_val)
         predictions_val = np.maximum(predictions_val, 0)
         val_error = rmsle(predictions_val,Y_val)
-        print (name,"kernel: Train error:",train_error,", Val error:",val_error)
+        val_err_his[i] = val_error
+        #print (name,"kernel: Train error:",train_error,", Val error:",val_error)
 
-        #Making predictions on test set and setting negative results to zero
-        predictions_test = classifier.predict(datasetX_pred)
-        predictions_test = np.maximum(predictions_test, 0)
+    plt.plot(train_err_his)
+    plt.plot(val_err_his)
+    plt.show()
 
-        #Saving predictions
-        np.savetxt("svm_"+name+"_predictions.csv", predictions_test, delimiter=",")
+
+    #Saving predictions
+    # Making predictions on test set and setting negative results to zero
+    # predictions_test = classifier.predict(datasetX_pred)
+    # predictions_test = np.maximum(predictions_test, 0)
+    #np.savetxt("svm_"+name+"_predictions.csv", predictions_test, delimiter=",")
