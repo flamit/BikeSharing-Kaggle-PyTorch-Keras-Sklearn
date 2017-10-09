@@ -51,9 +51,10 @@ if __name__ == '__main__':
     #svr_lin = SVR(kernel='linear', C=1000)
     #svr_poly = SVR(kernel='poly', C=1000, degree=2, gamma=0.5)
 
-    max_gamma_val = 0.5
-    min_gamma_val = 0.01
-    steps = 30
+    max_gamma_val = 0.16
+    min_gamma_val = 0.12
+    steps = 10
+    repeats = 2
 
     gamma_vals = np.linspace(max_gamma_val, min_gamma_val, steps)
 
@@ -64,23 +65,40 @@ if __name__ == '__main__':
     name = "Gaussian"
 
     for i,gamma in enumerate(gamma_vals):
-        classifier = SVR(kernel='rbf', C=1000, gamma=gamma)
-        classifier.fit(X_train, Y_train)
+        for j in range(repeats):
+            if j ==0:
+                X_train = datasetX[:TRAIN_SIZE]
+                Y_train = datasetY[:TRAIN_SIZE]
+                X_val = datasetX[TRAIN_SIZE:]
+                Y_val = datasetY[TRAIN_SIZE:]
+            else:
+                X_train = datasetX[TRAIN_SIZE:]
+                Y_train = datasetY[TRAIN_SIZE:]
+                X_val = datasetX[:TRAIN_SIZE]
+                Y_val = datasetY[:TRAIN_SIZE]
+            classifier = SVR(kernel='rbf', C=1000, gamma=gamma)
+            classifier.fit(X_train, Y_train)
 
-        #Making predictions on train set and setting negative results to zero
-        predictions_train = classifier.predict(X_train)
-        predictions_train = np.maximum(predictions_train, 0)
-        train_error = rmsle(predictions_train,Y_train)
-        train_err_his[i] = train_error
+            #Making predictions on train set and setting negative results to zero
+            predictions_train = classifier.predict(X_train)
+            predictions_train = np.maximum(predictions_train, 0)
+            train_error = rmsle(predictions_train,Y_train)
+            train_err_his[i] += train_error
 
-        predictions_val = classifier.predict(X_val)
-        predictions_val = np.maximum(predictions_val, 0)
-        val_error = rmsle(predictions_val,Y_val)
-        val_err_his[i] = val_error
-        #print (name,"kernel: Train error:",train_error,", Val error:",val_error)
+            predictions_val = classifier.predict(X_val)
+            predictions_val = np.maximum(predictions_val, 0)
+            val_error = rmsle(predictions_val,Y_val)
+            val_err_his[i] += val_error
+            #print (name,"kernel: Train error:",train_error,", Val error:",val_error)
 
-    plt.plot(train_err_his)
-    plt.plot(val_err_his)
+    val_err_his = val_err_his / 2
+    train_err_his = train_err_his / 2
+
+    plt.plot(gamma_vals,train_err_his,label='train')
+    plt.plot(gamma_vals,val_err_his,label='val')
+    plt.xlabel('gamma', fontsize=16)
+    plt.ylabel('error', fontsize=16)
+    plt.legend()
     plt.show()
 
 
