@@ -107,21 +107,33 @@ deep_layers_size = 10
 
 #Defining our NN model
 model = Sequential()
+
+#Input and 1st deep layer
 model.add(Dense(units=deep_layers_size, input_dim=13,kernel_initializer='he_normal',
                 bias_initializer='zeros'))
 model.add(Activation("tanh"))
+
+#2nd deep layer
 model.add(Dense(units=deep_layers_size,kernel_initializer='he_normal',
                 bias_initializer='zeros'))
 model.add(Activation("tanh"))
+
+#3rd deep layer
 model.add(Dense(units=deep_layers_size,kernel_initializer='he_normal',
                 bias_initializer='zeros'))
 model.add(Activation("tanh"))
+
+#4th deep layer
 model.add(Dense(units=deep_layers_size,kernel_initializer='he_normal',
                 bias_initializer='zeros'))
 model.add(Activation("tanh"))
+
+#Output layer
 model.add(Dense(units=3,kernel_initializer='he_normal',
                 bias_initializer='zeros'))
 model.add(Activation("relu"))
+
+
 model.compile(loss=rmsle, optimizer='adam')
 
 #Defining checkpoint and callbacks to save the best set of weights and limit printing
