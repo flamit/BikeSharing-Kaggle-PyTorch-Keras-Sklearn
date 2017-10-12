@@ -7,6 +7,7 @@ from keras.callbacks import ModelCheckpoint
 import keras.backend as KB
 from keras.layers import Dropout
 from data_utils import DataUtils as du
+import copy as cp
 
 TOTAL_DATASET_SIZE = 10887
 
@@ -26,6 +27,7 @@ df_to_predict['cont_time'] = df_to_predict.datetime.apply(du.datetime_to_total_h
 
 #Adding hour temporarily
 df['hour'] = df.datetime.apply(du.get_hour)
+df_original = cp.copy(df)
 df_to_predict['hour'] = df_to_predict.datetime.apply(du.get_hour)
 
 #Little refactor of humidity to make it easier to learn
@@ -76,7 +78,7 @@ df_to_predict['hour_cas'] = df_to_predict.datetime.apply(du.get_hour_casual)
 #print(df.head(10))
 
 #Data randomization(shuffling)
-df = df.sample(frac=1).reset_index(drop=True)
+#df = df.sample(frac=1).reset_index(drop=True)
 #print(df.head(30))
 
 #Spitting data into input features and labels
@@ -107,59 +109,54 @@ deep_layers_size = 10
 
 #Defining our NN model
 model = Sequential()
-
-#Input and 1st deep layer
 model.add(Dense(units=deep_layers_size, input_dim=13,kernel_initializer='he_normal',
                 bias_initializer='zeros'))
 model.add(Activation("tanh"))
-
-#2nd deep layer
 model.add(Dense(units=deep_layers_size,kernel_initializer='he_normal',
                 bias_initializer='zeros'))
 model.add(Activation("tanh"))
-
-#3rd deep layer
 model.add(Dense(units=deep_layers_size,kernel_initializer='he_normal',
                 bias_initializer='zeros'))
 model.add(Activation("tanh"))
-
-#4th deep layer
 model.add(Dense(units=deep_layers_size,kernel_initializer='he_normal',
                 bias_initializer='zeros'))
 model.add(Activation("tanh"))
-
-#Output layer
 model.add(Dense(units=3,kernel_initializer='he_normal',
                 bias_initializer='zeros'))
 model.add(Activation("relu"))
-
-
 model.compile(loss=rmsle, optimizer='adam')
 
 #Defining checkpoint and callbacks to save the best set of weights and limit printing
-checkpoint = ModelCheckpoint('best_weights.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='min')
+checkpoint = ModelCheckpoint('best_weights_5000eps.hdf5', monitor='val_loss', verbose=1, save_best_only=True, mode='min')
 callbacks_list = [checkpoint]
 
 #Start training
-history_callback = model.fit(train_setX, train_setY, epochs=0000, batch_size=50,validation_split=0.1,verbose=2,callbacks=callbacks_list)
+#history_callback = model.fit(train_setX, train_setY, epochs=5000, batch_size=50,validation_split=0.1,verbose=2,callbacks=callbacks_list)
 
 #Recovering val_loss history and training loss history from callbacks to arrays
-loss_history = history_callback.history["loss"]
-val_loss_history = history_callback.history["val_loss"]
+#loss_history = history_callback.history["loss"]
+#val_loss_history = history_callback.history["val_loss"]
 
-np.savetxt("error_plot.csv", [loss_history,val_loss_history], delimiter=",")
+#np.savetxt("error_plot.csv", [loss_history,val_loss_history], delimiter=",")
 
 #Loading weights
-model.load_weights('best_weights.hdf5')
+model.load_weights('best_weights_10eps.hdf5')
 
 #Making predictionsand saving them to csv
-predictions = model.predict(np.array(datasetX_pred))
-predictions_count = predictions[:,-1]
-np.savetxt("predictions.csv", predictions_count, delimiter=",")
-np.savetxt("all_predictions.csv", predictions, delimiter=",")
+# predictions = model.predict(np.array(datasetX_pred))
+# predictions_count = predictions[:,-1]
+# np.savetxt("predictions.csv", predictions_count, delimiter=",")
+# np.savetxt("all_predictions.csv", predictions, delimiter=",")
+#
+# #Plotting training loss and validation loss to control overfitting
+# plt.plot(loss_history)
+# plt.plot(val_loss_history)
+# plt.show()
 
-#Plotting training loss and validation loss to control overfitting
-plt.plot(loss_history)
-plt.plot(val_loss_history)
+predictions = model.predict(np.array(datasetX))[:,-1]
+df_original['predictions'] = model.predict(np.array(datasetX))[:,-1]
+a = df_original[:].groupby('hour')['predictions'].mean()
+b = df_original[:].groupby(['hour'])['count'].mean()
+plt.plot(a)
+plt.plot(b)
 plt.show()
-
