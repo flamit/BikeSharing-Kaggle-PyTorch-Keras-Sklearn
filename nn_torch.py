@@ -55,7 +55,7 @@ if __name__ == '__main__':
         torch.nn.Linear(layer_dims['fc4'],layer_dims['out']),
         torch.nn.ReLU())
 
-    optimizer = torch.optim.Adadelta(model.parameters(),lr=0.1)
+    optimizer = torch.optim.Adam(model.parameters())
 
     mse = torch.nn.MSELoss()
 
@@ -74,7 +74,7 @@ if __name__ == '__main__':
         val_err_his[epoch] = val_loss
         if val_loss < best_val_error:
             best_val_error = val_loss
-            info = "Val error has improved!"
+            info = "Val error has improved! Model saved."
             torch.save(model,"saved_model.mdl")
 
         # Counting error on train set
@@ -94,7 +94,7 @@ if __name__ == '__main__':
             y_pred = model(X_train_batch)
 
             # Compute and print loss.
-            loss = mse(y_pred, Y_train_batch)
+            loss = rmsle(y_pred, Y_train_batch)
             #print(torch.mean(loss).data)
             optimizer.zero_grad()
 
@@ -105,7 +105,9 @@ if __name__ == '__main__':
 
     model = torch.load("saved_model.mdl")
     predictions = model(X_test)
-    np.savetxt("predictions.csv", np.array(predictions.data.numpy()), delimiter=",")
+    test_date_df['count'] = np.array(predictions.data.numpy())
+    test_date_df.to_csv("predictions.csv",index=False)
+    #np.savetxt("predictions.csv", np.array(predictions.data.numpy()), delimiter=",")
     plt.plot(val_err_his)
     plt.plot(train_err_his)
     plt.show()
